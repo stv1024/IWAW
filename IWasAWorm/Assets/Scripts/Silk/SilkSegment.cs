@@ -25,7 +25,7 @@ public class SilkSegment
         get { return _jointLength; }
         set
         {
-            Debug.Log("set JointLength:" + value);
+            //Debug.Log("set JointLength:" + value);
             _jointLength = value;
             if (Joint)
             {
@@ -63,7 +63,6 @@ public class SilkSegment
     public void Update(float dt)
     {
         var dir = (FarPoint.Position - NearPoint.Position).normalized;
-        //var ray = new Ray2D(NearPoint.Position, dir);
         var hit = Physics2D.Raycast(NearPoint.Position, dir, (FarPoint.Position - NearPoint.Position).magnitude,
                             LayerManager.LayerMask.SilkJoint);
         if (hit)
@@ -78,10 +77,15 @@ public class SilkSegment
 
             SilkDebug.DrawCross(lineHit.Point, 0.4f, Color.black);
 
-            var jointItem = lineHit.Collider.gameObject.layer == LayerManager.Layer.Ground
-                                ? null
-                                : lineHit.Collider.GetComponent<Rigidbody2D>();
-            MySilk.SeperateSegment(IndexOnSilk, lineHit.Point, jointItem);
+            Debug.Log("bl=" + bl);
+            Debug.Break();
+            if (bl)
+            {
+                var jointItem = lineHit.Collider.gameObject.layer == LayerManager.Layer.Ground
+                                    ? null
+                                    : lineHit.Collider.GetComponent<Rigidbody2D>();
+                MySilk.SeperateSegment(IndexOnSilk, lineHit.Point, jointItem);
+            }
         }
 
         _lastLine.x = NearPoint.Position.x;
@@ -102,8 +106,8 @@ public class SilkSegment
             }
             else if (realLength > JointLength)
             {
-                Debug.Log("r>j");
-                //Joint.enabled = true;
+                //Debug.Log("r>j");
+                //给拉力，TODO：拉力手感太差，延迟太长
                 var force = (realLength - JointLength)*MySilk.K;
                 var nearRgd = NearPoint.Item ? NearPoint.Item.GetComponent<Rigidbody2D>() : null;
                 if (nearRgd && nearRgd.isKinematic) nearRgd = null;

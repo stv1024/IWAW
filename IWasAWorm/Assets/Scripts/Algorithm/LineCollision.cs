@@ -2,16 +2,17 @@ using System;
 using UnityEngine;
 using System.Collections;
 using System.Linq;
+using Fairwood.PhysicsLib;
 
 public static class LineCollision
 {
     /// <summary>
-    /// ������ƽ���ߣ�����Slerp
+    /// 计算角平分线，类似Slerp
     /// </summary>
-    /// <param name="vertex">���㣬�������ߵ��غϣ�</param>
-    /// <param name="sidePoint1">��1��һ��</param>
-    /// <param name="sidePoint2">��2��һ��</param>
-    /// <returns>�Ƕ�ƽ�֣�����ƽ�֣���ƽ�����ϵ�һ��</returns>
+    /// <param name="vertex">顶点，不能与边点重合！</param>
+    /// <param name="sidePoint1">边1上一点</param>
+    /// <param name="sidePoint2">边2上一点</param>
+    /// <returns>角度平分，长度平分，角平分线上的一点</returns>
     public static Vector2 CalcAngleBisector(Vector2 vertex, Vector2 sidePoint1, Vector2 sidePoint2)
     {
         if (vertex == sidePoint1 || vertex == sidePoint2)
@@ -29,35 +30,38 @@ public static class LineCollision
     }
 
     ///// <summary>
-    ///// ������ײ��
+    ///// 计算碰撞点
     ///// </summary>
     ///// <param name="vertex"></param>
     ///// <param name="sidePoint1"></param>
     ///// <param name="sidePoint2"></param>
     ///// <param name="collisionPoint"></param>
-    ///// <returns>��û����ײ</returns>
+    ///// <returns>有没有碰撞</returns>
     //public static bool TryGetLineCollisionPoint(Vector2 vertex, Vector2 sidePoint1, Vector2 sidePoint2, out Vector2 collisionPoint)
     //{
     //    throw new Exception("TODO");
     //}
 
     /// <summary>
-    /// Ӧ��ֻ��startʱ����ײendʱ����ײ����������true��������Чhit�����˶�����������
+    /// 应该只在start时无碰撞end时有碰撞的情况返回true，给出有效hit。对运动物体会出错
     /// </summary>
     /// <param name="startLine"></param>
     /// <param name="endLine"></param>
     /// <param name="hitInfo"></param>
     /// <param name="layerMask"></param>
+    /// <param name="epsilon"></param>
     /// <returns></returns>
     public static bool TryGetLineCollisionPoint(Vector4 startLine, Vector4 endLine, out LineCollisionHit hitInfo, LayerMask layerMask, float epsilon)
     {
         hitInfo = new LineCollisionHit();
-        RaycastHit curHit;
-        if (!CheckLineCollision(endLine, out curHit, layerMask)) return false;//endLineûײ���ͱ�������������
-        var startLineRay = new Ray(startLine.P1(), startLine.Direction());
+        RaycastHit2D curHit;
+        Debug.Log("57");
+        if (!CheckLineCollision(endLine, out curHit, layerMask)) return false;//endLine没撞到就别调用这个方法
+        Debug.Log("59");
+        var startLineRay = new Ray2D(startLine.P1(), startLine.Direction());
 
-        RaycastHit startLineHit;//TODO:�˶�������ô��
-        if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length())) return false;//startLine����ײ��������������һ֡�͸ô���
+        RaycastHit2D startLineHit;//活动物体就不考虑碰撞了，现在只考虑地形
+        if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length())) return false;//startLine都碰撞到这个东西了上一帧就该处理
         
         var latestHit = curHit;
         var vertical = CalcPointToLineVertical(startLine, latestHit.point);
@@ -77,52 +81,52 @@ public static class LineCollision
         }
         var nearHitInfo = latestHit;
 
-        #region ����FarHit
+        #region 计算FarHit
 
         var vectorF2N = new Vector2(endLine.x, endLine.y) - new Vector2(endLine.z, endLine.w);
-        var fnRay = new Ray(new Vector2(endLine.z, endLine.w),vectorF2N);//Far->Near������
-        var hits = Physics.RaycastAll(fnRay, vectorF2N.magnitude, layerMask);
-        if (hits.Length == 0)//������û�е�
+        var fnRay = new Ray2D(new Vector2(endLine.z, endLine.w), vectorF2N);//Far->Near的射线
+        var hits = Physics2D.RaycastAll(fnRay.origin, fnRay.direction, vectorF2N.magnitude, layerMask);
+        if (hits.Length == 0)//不可能没有的
         {
             Debug.LogError("Error");
             return false;
         }
-        if (hits.Length > 1)//���ټ�
+        if (hits.Length > 1)//很少见，穿透了多次地形
         {
-            var rightHits = hits.Where(x => x.collider == nearHitInfo.collider).ToList();//ȡ����ײ��ָ����ײ����
-            rightHits.Sort((x, y) => (int)Mathf.Sign(x.distance - y.distance));//����FarPoint��Զ������
+            var rightHits = hits.Where(x => x.collider == nearHitInfo.collider).ToList();//取出碰撞到指定碰撞器的
+            rightHits.Sort((x, y) => (int)Mathf.Sign(x.distance - y.distance));//按到FarPoint的远近排序
         }
-        var farHitInfo = hits[hits.Length - 1];//ȡ����Զ��
+        var farHitInfo = hits[hits.Length - 1];//取出最远的
 
         #endregion
 
         SilkDebug.DrawCross(nearHitInfo.point, 0.2f, Color.yellow);
         SilkDebug.DrawCross(farHitInfo.point, 0.2f, Color.yellow);
 
-        #region ���������ͽ�ƽ����
+        #region 计算尖点和角平分线
 
         Vector2 c1 = nearHitInfo.point;
         Vector2 c2 = farHitInfo.point;
         var n1 = nearHitInfo.normal;
         var n2 = farHitInfo.normal;
-        var n1v = new Vector2(-n1.y, n1.x);//n1�Ĵ��ߣ�������������c1���ڱ�
-        var n2v = new Vector2(-n2.y, n2.x);//n2�Ĵ��ߣ�������������c2���ڱ�
-        Vector2 vertex;//���㣬����
+        var n1v = new Vector2(-n1.y, n1.x);//n1的垂线，右手螺旋，即c1所在边
+        var n2v = new Vector2(-n2.y, n2.x);//n2的垂线，右手螺旋，即c2所在边
+        Vector2 vertex;//顶点，尖点
         if (Vector2.Dot(n2v, n1) == 0)
         {
-            vertex = (c1 + c2)*0.5f;//����n1v,n2vƽ�У����޽��㣬ȡc1,c2�е㡣��̫���ܷ���
+            vertex = (c1 + c2) * 0.5f;//如果n1v,n2v平行，则无交点，取c1,c2中点。不太可能发生
         }
         else
         {
-            vertex = c2 + Vector2.Dot(c1 - c2, n1)/Vector2.Dot(n2v, n1)*n2v; //�ҵ�����
+            vertex = c2 + Vector2.Dot(c1 - c2, n1) / Vector2.Dot(n2v, n1) * n2v; //找到尖点
         }
-        var bisector = (n2v - n1v).normalized;//��ƽ���ߣ�����֤����
+        var bisector = (n2v - n1v).normalized;//角平分线，不保证方向
 
-        var bv = new Vector2(-bisector.y, bisector.x);//��ƽ���ߵĴ���
-        var p1 = new Vector2(startLine.x, startLine.y);//��startLine����ƽ���ߵĽ���
-        var p2 = new Vector2(startLine.z, startLine.w);//p1,p2��startLine�߶ε������˵�
+        var bv = new Vector2(-bisector.y, bisector.x);//角平分线的垂线
+        var p1 = new Vector2(startLine.x, startLine.y);//找startLine与角平分线的交点
+        var p2 = new Vector2(startLine.z, startLine.w);//p1,p2是startLine线段的两个端点
         var p1p2 = p2 - p1;
-        var v = p1 + Vector2.Dot(vertex - p1, bv)/Vector2.Dot(p1p2, bv)*p1p2;//�Ǹ�������Ҫ����ײ�㣬������ײ������һ������ֵ����
+        var v = p1 + Vector2.Dot(vertex - p1, bv) / Vector2.Dot(p1p2, bv) * p1p2;//那个我们需要的碰撞点，浮于碰撞器表面一个缓冲值以内
 
         SilkDebug.DrawCross(vertex, 0.3f, Color.magenta);
         Debug.DrawRay(vertex, bisector);
@@ -140,23 +144,24 @@ public static class LineCollision
         return Physics.Linecast(new Vector2(line.x, line.y), new Vector2(line.z, line.w), layerMask);
     }
     /// <summary>
-    /// //��Near����Far
+    /// 从Near射向Far，返回第一个碰撞
     /// </summary>
     /// <param name="line"></param>
-    /// <param name="hitInfo">//��Near����Far</param>
+    /// <param name="hitInfo">从Near射向Far</param>
     /// <param name="layerMask"></param>
     /// <returns></returns>
-    private static bool CheckLineCollision(Vector4 line, out RaycastHit hitInfo, LayerMask layerMask)
+    private static bool CheckLineCollision(Vector4 line, out RaycastHit2D hitInfo, LayerMask layerMask)
     {
-        return Physics.Linecast(new Vector2(line.x, line.y), new Vector2(line.z, line.w), out hitInfo, layerMask);
+        hitInfo = Physics2D.Linecast(new Vector2(line.x, line.y), new Vector2(line.z, line.w), layerMask);
+        return hitInfo.collider;
     }
-
+    
     /// <summary>
-    /// �㵽ֱ�ߵĴ��ߣ�������ֱ��ָ����
+    /// 点到直线的垂线，向量从直线指向点
     /// </summary>
     /// <param name="line"></param>
     /// <param name="point"></param>
-    /// <returns>��ֱ��ָ�����Ĵ�������</returns>
+    /// <returns>从直线指向点的垂线向量</returns>
     public static Vector2 CalcPointToLineVertical(Vector4 line, Vector2 point)
     {
         var p1 = new Vector2(line.x, line.y);
@@ -172,7 +177,7 @@ public static class LineCollision
 
 public struct LineCollisionHit
 {
-    public LineCollisionHit(Collider collider, float distanceFromNear, Vector2 normal, Vector2 point) : this()
+    public LineCollisionHit(Collider2D collider, float distanceFromNear, Vector2 normal, Vector2 point) : this()
     {
         Collider = collider;
         DistanceFromNear = distanceFromNear;
@@ -180,14 +185,14 @@ public struct LineCollisionHit
         Point = point;
     }
 
-    public Collider Collider { get; set; }
+    public Collider2D Collider { get; set; }
     public float DistanceFromNear { get; set; }
     public Vector2 Normal { get; set; }
     public Vector2 Point { get; set; }
 
-    public Rigidbody Rigidbody
+    public Rigidbody2D Rigidbody
     {
-        get { return Collider.GetComponent<Rigidbody>(); }
+        get { return Collider.GetComponent<Rigidbody2D>(); }
     }
 
     public Transform Transform
