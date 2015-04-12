@@ -26,7 +26,7 @@ public class SilkSegment
         set
         {
             //Debug.Log("set JointLength:" + value);
-            _jointLength = value;
+            _jointLength = Mathf.Max(0f, value);
             if (Joint)
             {
                 Joint.distance = _jointLength;
@@ -78,7 +78,7 @@ public class SilkSegment
             SilkDebug.DrawCross(lineHit.Point, 0.4f, Color.black);
 
             Debug.Log("bl=" + bl);
-            Debug.Break();
+            //Debug.Break();
             if (bl)
             {
                 var jointItem = lineHit.Collider.gameObject.layer == LayerManager.Layer.Ground
@@ -122,8 +122,8 @@ public class SilkSegment
                 }
                 else if (nearRgd)
                 {
-                    nearRgd.AddForceAtPosition(force * (FarPoint.Position - NearPoint.Position).normalized,
-                        NearPoint.Position);
+                    nearRgd.AddForceAtPosition(force * (FarPoint.Position - NearPoint.Position).normalized * dt,
+                        NearPoint.Position, ForceMode2D.Impulse);
                 }
                 else if (farRgd)
                 {
@@ -140,7 +140,7 @@ public class SilkSegment
     /// </summary>
     public void CreateJoint(float length)
     {
-        if (Joint) Object.Destroy(Joint);
+        if (Joint) Object.Destroy(Joint); //TODO：很久以后优化一下
         if (FarPoint.Item) //优先在远点创建
         {
             Joint = FarPoint.Item.gameObject.AddComponent<DistanceJoint2D>();

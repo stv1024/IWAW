@@ -55,14 +55,20 @@ public static class LineCollision
     {
         hitInfo = new LineCollisionHit();
         RaycastHit2D curHit;
-        Debug.Log("57");
-        if (!CheckLineCollision(endLine, out curHit, layerMask)) return false;//endLine没撞到就别调用这个方法
-        Debug.Log("59");
+        if (!CheckLineCollision(endLine, out curHit, layerMask))
+        {
+            Debug.LogWarning("Penetration may happen!");
+            return false; //endLine没撞到就别调用这个方法
+        }
         var startLineRay = new Ray2D(startLine.P1(), startLine.Direction());
 
         RaycastHit2D startLineHit;//活动物体就不考虑碰撞了，现在只考虑地形
-        if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length())) return false;//startLine都碰撞到这个东西了上一帧就该处理
-        
+        if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length()))
+        {
+            Debug.LogWarning("Penetration may happen!");
+            return false; //startLine都碰撞到这个东西了上一帧就该处理
+        }
+
         var latestHit = curHit;
         var vertical = CalcPointToLineVertical(startLine, latestHit.point);
         while (vertical.magnitude >= epsilon)
@@ -93,6 +99,7 @@ public static class LineCollision
         }
         if (hits.Length > 1)//很少见，穿透了多次地形
         {
+            Debug.LogWarning("hits.Length > 1 ! Very rare!");
             var rightHits = hits.Where(x => x.collider == nearHitInfo.collider).ToList();//取出碰撞到指定碰撞器的
             rightHits.Sort((x, y) => (int)Mathf.Sign(x.distance - y.distance));//按到FarPoint的远近排序
         }

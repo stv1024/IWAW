@@ -40,7 +40,7 @@ public class Silk : MonoBehaviour
         Ends[0] = farEnd;
 
         var nearEnd = new SilkEnd(this);
-        farEnd.TempMass.name = "NearEnd TempMass of " + name;
+        nearEnd.TempMass.name = "NearEnd TempMass of " + name;
         Ends[1] = nearEnd;
 
         Points.Clear();
@@ -155,7 +155,7 @@ public class Silk : MonoBehaviour
         var jointLength = Segments[i].JointLength + Segments[i + 1].JointLength;
         Debug.Log("combinedlength:"+jointLength);
         Points.RemoveAt(i + 1);
-        //Destroy(Segments[i + 1].gameObject);
+        Destroy(Segments[i + 1].Joint);
         Segments.RemoveAt(i + 1);
         Segments[i].CreateJoint(jointLength);
     }
@@ -165,11 +165,12 @@ public class Silk : MonoBehaviour
     private Vector2 _lastFarEndPosWorld;
     void Update()
     {
-        for (int i = 0; i < Points.Count;)
+        for (int i = 1; i < Points.Count - 1;)//遍历中间点
         {
             var silkMidPoint = Points[i] as SilkMidPoint;
             if (silkMidPoint == null)
             {
+                Debug.LogError("中间怎么会有非中间点！");
                 i++;
                 continue;
             }

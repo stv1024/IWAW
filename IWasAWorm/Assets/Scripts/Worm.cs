@@ -24,14 +24,14 @@ public class Worm : MonoBehaviour
         GetComponent<Rigidbody2D>().inertia = 1;//将惯性张量固定为有限值
 
         //TODO TEST
-        var cldr = GameObject.Find("Rect 2").GetComponent<Collider2D>();
-        RaycastHit2D hit;
-        var bl = cldr.Raycast(new Ray2D(Vector2.zero, new Vector2(1, 1)), out hit, 100);
+        //var cldr = GameObject.Find("Rect 4").GetComponent<Collider2D>();
+        //RaycastHit2D hit;
+        //var bl = cldr.Raycast(new Ray2D(Vector2.zero, new Vector2(1, 1)), out hit, 100);
 
-        Debug.Log("bl=" + bl);
-        Debug.Log("collider=" + hit.collider);
-        Debug.DrawRay(Vector3.zero, new Vector3(1, 1, 0), Color.cyan, 5);
-        if (bl) SilkDebug.DrawCross(hit.point, 0.2f, Color.blue, 5);
+        //Debug.Log("bl=" + bl);
+        //Debug.Log("collider=" + hit.collider.name);
+        //Debug.DrawRay(Vector3.zero, new Vector3(1, 1, 0), Color.cyan, 5);
+        //if (bl) SilkDebug.DrawCross(hit.point, 0.2f, Color.blue, 5);
     }
 
     public void Spit(Vector2 dir)
