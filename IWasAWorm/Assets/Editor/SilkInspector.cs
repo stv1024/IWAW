@@ -36,6 +36,7 @@ public class SilkInspector : Editor
                 cs.Segments[i].OnInspectorGUI();
             }
         }
+        EditorUtility.SetDirty(target);
     }
 
     void OnSceneGUI()

@@ -65,14 +65,18 @@ public static class LineCollision
         RaycastHit2D startLineHit;//活动物体就不考虑碰撞了，现在只考虑地形
         if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length()))
         {
-            Debug.LogWarning("Penetration may happen!");
+            SilkDebug.DrawCross(startLineHit.point, 0.1f, new Color(0.6f, 0.6f, 0));
+            Debug.LogWarningFormat("Penetration may happen at {0},{1}! startLine={2} endLine={3}", startLineHit.point.x, startLineHit.point.y, startLine, endLine);
+            Debug.Break();
             return false; //startLine都碰撞到这个东西了上一帧就该处理
         }
 
         var latestHit = curHit;
         var vertical = CalcPointToLineVertical(startLine, latestHit.point);
+        var iterationTimes = 0;
         while (vertical.magnitude >= epsilon)
         {
+            iterationTimes ++;
             var midLine = Vector4.Lerp(startLine, endLine, 0.5f);
             if (CheckLineCollision(midLine, out curHit, layerMask))
             {
@@ -94,7 +98,9 @@ public static class LineCollision
         var hits = Physics2D.RaycastAll(fnRay.origin, fnRay.direction, vectorF2N.magnitude, layerMask);
         if (hits.Length == 0)//不可能没有的
         {
-            Debug.LogError("Error");
+            SilkDebug.DrawCross(new Vector2(endLine.x, endLine.y), 0.1f, new Color(0.5f, 0.5f, 0.1f));
+            SilkDebug.DrawCross(new Vector2(endLine.z, endLine.w), 0.1f, new Color(0.4f, 0.4f, 0.3f));
+            Debug.LogError("Error Cannot find farHit @"+Time.frameCount);
             return false;
         }
         if (hits.Length > 1)//很少见，穿透了多次地形
@@ -130,10 +136,25 @@ public static class LineCollision
         var bisector = (n2v - n1v).normalized;//角平分线，不保证方向
 
         var bv = new Vector2(-bisector.y, bisector.x);//角平分线的垂线
-        var p1 = new Vector2(startLine.x, startLine.y);//找startLine与角平分线的交点
+        //找startLine与角平分线的交点
+        var p1 = new Vector2(startLine.x, startLine.y);//p1,p2是startLine线段的两个端点
         var p2 = new Vector2(startLine.z, startLine.w);//p1,p2是startLine线段的两个端点
         var p1p2 = p2 - p1;
         var v = p1 + Vector2.Dot(vertex - p1, bv) / Vector2.Dot(p1p2, bv) * p1p2;//那个我们需要的碰撞点，浮于碰撞器表面一个缓冲值以内
+
+        //如果碰撞点离碰撞器过近（小于SurfaceLayerMinThickness），则强行拉回此值之外
+        var vertex2v = v - vertex;
+        if (vertex2v.magnitude < PhysicsConfig.SurfaceLayerMinThickness)
+        {
+            //找endLine与角平分线的交点
+            var p1endLine = new Vector2(endLine.x, endLine.y);
+            var p2endLine = new Vector2(endLine.z, endLine.w);
+            var p1p2endLine = p2endLine - p1endLine;
+            var vendLine = p1endLine + Vector2.Dot(vertex - p1endLine, bv) / Vector2.Dot(p1p2endLine, bv) * p1p2endLine;
+
+            Debug.LogFormat("vertex={0} v={1} distance={2}", vertex, v, vertex2v.magnitude);
+            v = v + (v-vendLine).normalized*PhysicsConfig.SurfaceLayerMinThickness;
+        }
 
         SilkDebug.DrawCross(vertex, 0.3f, Color.magenta);
         Debug.DrawRay(vertex, bisector);

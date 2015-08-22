@@ -16,19 +16,30 @@ public class SilkMidPoint : SilkPoint
         _hand = (f.x*n.y - f.y*n.x) > 0 ? HandType.Right : HandType.Left;
     }
 
+    public void SetIndexOnSilk(int indexOnSilk)
+    {
+        _indexOnSilk = indexOnSilk;
+    }
+
     /// <summary>
-    /// ÓÉSilkÔÚUpdateÀïÃ¿Ö¡µ÷ÓÃ£¬¼ì²éÊÖĞÔÊÇ·ñ¸Ä±ä£¬±äÁËÔòÒª°ÑÇ°ºóÁ½½ØºÏ²¢³ÉÒ»½ÚÖ±Ïß
+    /// ç”±Silkåœ¨Updateé‡Œæ¯å¸§è°ƒç”¨ï¼Œæ£€æŸ¥æ‰‹æ€§æ˜¯å¦æ”¹å˜ï¼Œå˜äº†åˆ™è¦æŠŠå‰åä¸¤æˆªåˆå¹¶æˆä¸€èŠ‚ç›´çº¿
     /// </summary>
     public bool CheckHandChange()
     {
-        //¼ì²âÊÇ·ñ¸Ä±äÁËÊÖĞÔ
+        //æ£€æµ‹æ˜¯å¦æ”¹å˜äº†æ‰‹æ€§
 
         var f = FartherPoint - Position;
+        if (_indexOnSilk + 1 >= MySilk.Points.Count)
+        {
+            Debug.LogFormat("GetNearerPoint[{0}] Count={1}", _indexOnSilk, MySilk.Points.Count);
+            Debug.LogFormat("GetNearerPoint({0})", MySilk.Points[_indexOnSilk + 1]);
+        }
         var n = NearerPoint - Position;
         var curHand = (f.x * n.y - f.y * n.x) > 0 ? HandType.Right : HandType.Left;
         if (curHand != _hand)
         {
-            //ÊÖĞÔ¸Ä±ä£¬Ë«½ØºÏ²¢
+            Debug.LogFormat("HandChanged[{7}] {0}â†’{1} Far={2} Near={3} Pos={4} f={5} n={6}", _hand, curHand, FartherPoint.ToAccurateString(), NearerPoint.ToAccurateString(), Position.ToAccurateString(), f.ToAccurateString(), n.ToAccurateString(), _indexOnSilk);
+            //æ‰‹æ€§æ”¹å˜ï¼ŒåŒæˆªåˆå¹¶
             MySilk.CombineSegments(_indexOnSilk - 1);
             return true;
         }
@@ -36,12 +47,20 @@ public class SilkMidPoint : SilkPoint
     }
 
     #region Utilities
-    Vector2 NearerPoint { get { return MySilk.Points[_indexOnSilk + 1].Position; } }
+
+    private Vector2 NearerPoint
+    {
+        get
+        {
+            return MySilk.Points[_indexOnSilk + 1].Position;
+        }
+    }
+
     Vector2 FartherPoint { get { return MySilk.Points[_indexOnSilk - 1].Position; } }
     #endregion
 
     /// <summary>
-    /// ÊÖĞÔ£¬´Ó½ü¶ËÏòÔ¶¶Ë¿´È¥£¬·ûºÏÄÄÖ»ÊÖµÄÂİĞı¶¨Ôò
+    /// æ‰‹æ€§ï¼Œä»è¿‘ç«¯å‘è¿œç«¯çœ‹å»ï¼Œç¬¦åˆå“ªåªæ‰‹çš„èºæ—‹å®šåˆ™
     /// </summary>
     public enum HandType
     {

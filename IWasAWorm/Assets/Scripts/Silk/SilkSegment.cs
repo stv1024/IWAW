@@ -70,15 +70,22 @@ public class SilkSegment
             SilkDebug.DrawCross(hit.point, 0.3f, Color.red);
 
             var curLine = new Vector4(NearPoint.Position.x, NearPoint.Position.y, FarPoint.Position.x, FarPoint.Position.y);
+            SilkDebug.DrawLine(_lastLine, Color.green);
+            SilkDebug.DrawLine(curLine, Color.black);
             LineCollisionHit lineHit;
             var bl = LineCollision.TryGetLineCollisionPoint(_lastLine, curLine, out lineHit, LayerManager.LayerMask.SilkJoint,
                                                    PhysicsConfig.SurfaceLayerThickness);
-            SilkDebug.DrawLine(_lastLine, Color.green);
+            var tmpDrawer = lineHit.Collider.GetComponent<TmpDrawCircleCollider2D>();
+            if (tmpDrawer != null)
+            {
+                tmpDrawer.DrawArc(lineHit.Point);
+                Debug.LogFormat("line to circle distance:{0} @{1}",
+                    Vector2.Distance(lineHit.Point, tmpDrawer.transform.position.ToVector2()) -
+                    tmpDrawer.GetComponent<CircleCollider2D>().radius, Time.frameCount);
+            }
 
             SilkDebug.DrawCross(lineHit.Point, 0.4f, Color.black);
 
-            Debug.Log("bl=" + bl);
-            //Debug.Break();
             if (bl)
             {
                 var jointItem = lineHit.Collider.gameObject.layer == LayerManager.Layer.Ground
@@ -204,6 +211,15 @@ public class SilkSegment
     public float Distance
     {
         get { return (MySilk.Points[IndexOnSilk].Position - MySilk.Points[IndexOnSilk + 1].Position).magnitude; }
+    }
+
+    #endregion
+
+    #region Debug
+
+    public override string ToString()
+    {
+        return string.Format("SilkSeg[{0}]({1}→{2})", IndexOnSilk, NearPoint, FarPoint);
     }
 
     #endregion

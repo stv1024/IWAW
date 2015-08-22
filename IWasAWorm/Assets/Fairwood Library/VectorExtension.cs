@@ -99,6 +99,15 @@ namespace Fairwood.Math {
         {
             return new Vector3(me.x, me.y, z);
         }
+
+	    public static string ToAccurateString(this Vector2 me)
+	    {
+	        return string.Format("({0}, {1})", me.x, me.y);
+	    }
+	    public static string ToAccurateString(this Vector3 me)
+	    {
+	        return string.Format("({0}, {1}, {2})", me.x, me.y, me.z);
+	    }
     }
 
     public struct IntVector2

@@ -71,12 +71,20 @@ public class Worm : MonoBehaviour
         SilkInMouth.Lengthen(dl);
     }
 
+    public float AutoSpitY = -85;
+    private bool _tmpSpitted = false;
     void Update()
     {
         if (Input.GetKeyUp(KeyCode.T))
         {
             var str = "{COM:" + GetComponent<Rigidbody>().centerOfMass + ", Tensor:" + GetComponent<Rigidbody>().inertiaTensor + "}";
             Debug.LogWarning(str);
+        }
+
+        if (!_tmpSpitted && transform.position.y <= AutoSpitY)
+        {
+            _tmpSpitted = true;
+            Spit(new Vector2(3, 3));
         }
     }
 }

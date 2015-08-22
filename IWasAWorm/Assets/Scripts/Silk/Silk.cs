@@ -119,18 +119,13 @@ public class Silk : MonoBehaviour
         var nearPartDistance = (hitPoint - Points[i + 1].Position).magnitude;
         var farPartDistance = (hitPoint - Points[i].Position).magnitude;
         var totalDistance = nearPartDistance + farPartDistance;
-        Debug.Log("nPD:" + nearPartDistance + ";fPD:" + farPartDistance + ";tD:" + totalDistance);
+        //Debug.Log("nPD:" + nearPartDistance + ";fPD:" + farPartDistance + ";tD:" + totalDistance);
         var nearPartLength = Segments[i].JointLength * nearPartDistance / totalDistance;
         var farPartLength = Segments[i].JointLength * farPartDistance / totalDistance;
 
         var newMidPoint = new SilkMidPoint(this, i + 1, Points[i + 1].Position, hitPoint, Points[i].Position);
         Points.Insert(i + 1, newMidPoint);
 
-        //var newSegmentGO = new GameObject("Segment of " + name);
-        //newSegmentGO.transform.parent = transform;
-        var newSegment = new SilkSegment();
-        newSegment.Initialize(this, i + 1);
-        Segments.Insert(i + 1, newSegment);//在弯折的丝的后面插入
 
         newMidPoint.Item = jointItem;
         if (newMidPoint.Item)
@@ -141,6 +136,11 @@ public class Silk : MonoBehaviour
         {
             newMidPoint.Anchor = hitPoint;
         }
+        //var newSegmentGO = new GameObject("Segment of " + name);
+        //newSegmentGO.transform.parent = transform;
+        var newSegment = new SilkSegment();
+        newSegment.Initialize(this, i + 1);
+        Segments.Insert(i + 1, newSegment);//在弯折的丝的后面插入
 
         newSegment.CreateJoint(nearPartLength);
 
@@ -152,11 +152,22 @@ public class Silk : MonoBehaviour
     /// <param name="i"></param>
     public void CombineSegments(int i)
     {
+        Debug.LogFormat("CombineSegments[{0}] @{1}", i, Time.frameCount);
         var jointLength = Segments[i].JointLength + Segments[i + 1].JointLength;
-        Debug.Log("combinedlength:"+jointLength);
         Points.RemoveAt(i + 1);
         Destroy(Segments[i + 1].Joint);
         Segments.RemoveAt(i + 1);
+        for (int j = i + 1; j < Points.Count - 1; )
+        {
+            var silkMidPoint = Points[j] as SilkMidPoint;
+            if (silkMidPoint == null)
+            {
+                Debug.LogError("中间怎么会有非中间点！");
+                j++;
+                continue;
+            }
+            silkMidPoint.SetIndexOnSilk(j);
+        }
         Segments[i].CreateJoint(jointLength);
     }
 
@@ -174,6 +185,7 @@ public class Silk : MonoBehaviour
                 i++;
                 continue;
             }
+            Debug.LogFormat("CheckHandChange[{0}], Count={1}", i, Points.Count);
             if (!silkMidPoint.CheckHandChange()) i++;
         }
         if (FarEnd.State == SilkEndState.Held)
