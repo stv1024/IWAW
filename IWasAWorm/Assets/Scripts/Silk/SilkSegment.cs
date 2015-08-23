@@ -62,15 +62,22 @@ public class SilkSegment
 
     public void Update(float dt)
     {
-        CheckSeperate();
+        var isCorrect = CheckSeperate();
 
-        LastLine.x = NearPoint.Position.x;
-        LastLine.y = NearPoint.Position.y;
-        LastLine.z = FarPoint.Position.x;
-        LastLine.w = FarPoint.Position.y;
+        if (isCorrect)//如果相切，就放空这一帧
+        {
+            LastLine.x = NearPoint.Position.x;
+            LastLine.y = NearPoint.Position.y;
+            LastLine.z = FarPoint.Position.x;
+            LastLine.w = FarPoint.Position.y;
+        }
     }
 
-    public void CheckSeperate()
+    /// <summary>
+    /// 如果没有相切的错误，就返回true，否则返回false
+    /// </summary>
+    /// <returns></returns>
+    public bool CheckSeperate()
     {
         var dir = (FarPoint.Position - NearPoint.Position).normalized;
         var hit = Physics2D.Raycast(NearPoint.Position, dir, (FarPoint.Position - NearPoint.Position).magnitude,
@@ -103,7 +110,14 @@ public class SilkSegment
                                     : lineHit.Collider.GetComponent<Rigidbody2D>();
                 MySilk.SeperateSegment(IndexOnSilk, lineHit.Point, jointItem);
             }
+            else
+            {
+                Debug.LogWarningFormat("Tangency Error[{0}]", IndexOnSilk);
+                return false;
+            }
         }
+
+        return true;
     }
 
     public void FixedUpdate(float dt)

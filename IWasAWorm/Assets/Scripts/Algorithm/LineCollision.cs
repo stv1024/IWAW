@@ -67,8 +67,6 @@ public static class LineCollision
         {
             SilkDebug.DrawCross(startLineHit.point, 0.1f, new Color(0.6f, 0.6f, 0));
             Debug.LogWarningFormat("Penetration may happen at {0},{1}! startLine={2} endLine={3}, distanceToCenter={4}", startLineHit.point.x, startLineHit.point.y, startLine, endLine, CalcPointToLineVertical(startLine, curHit.collider.transform.position).magnitude);
-             
-            Debug.Break();
             return false; //startLine都碰撞到这个东西了上一帧就该处理
         }
 
@@ -81,7 +79,6 @@ public static class LineCollision
             if (iterationTimes > 50)
             {
                 Debug.LogFormat("iteration too many times > 50!");
-                Debug.Break();
                 break;
             }
             var midLine = Vector4.Lerp(startLine, endLine, 0.5f);
@@ -160,7 +157,7 @@ public static class LineCollision
             var p1p2endLine = p2endLine - p1endLine;
             var vendLine = p1endLine + Vector2.Dot(vertex - p1endLine, bv) / Vector2.Dot(p1p2endLine, bv) * p1p2endLine;
 
-            Debug.LogFormat("vertex={0} v={1} distance={2}", vertex, v, vertex2v.magnitude);
+            Debug.LogFormat("OutPush vertex={0} v={1} distance={2}", vertex, v, vertex2v.magnitude);
             v = v + (v-vendLine).normalized*PhysicsConfig.SurfaceLayerMinThickness;
         }
 
