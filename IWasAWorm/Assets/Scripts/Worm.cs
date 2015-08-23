@@ -86,5 +86,8 @@ public class Worm : MonoBehaviour
             _tmpSpitted = true;
             Spit(new Vector2(3, 3));
         }
+
+        //Debug.LogFormat("To TestCircle:{0}",
+        //    Vector2.Distance(transform.position, GameObject.Find("TestCircle").transform.position));
     }
 }

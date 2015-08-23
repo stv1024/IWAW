@@ -50,17 +50,27 @@ public class SilkSegment
         IndexOnSilk = indexOnSilk;
         var center = MySilk.transform.InverseTransformPoint((FarPoint.Position + NearPoint.Position) * 0.5f);
 
-        _lastLine.x = NearPoint.Position.x;
-        _lastLine.y = NearPoint.Position.y;
-        _lastLine.z = FarPoint.Position.x;
-        _lastLine.w = FarPoint.Position.y;
+        LastLine.x = NearPoint.Position.x;
+        LastLine.y = NearPoint.Position.y;
+        LastLine.z = FarPoint.Position.x;
+        LastLine.w = FarPoint.Position.y;
     }
 
-    private Vector4 _lastLine;
+    public Vector4 LastLine;
 
     public bool Terminated = false;
 
     public void Update(float dt)
+    {
+        CheckSeperate();
+
+        LastLine.x = NearPoint.Position.x;
+        LastLine.y = NearPoint.Position.y;
+        LastLine.z = FarPoint.Position.x;
+        LastLine.w = FarPoint.Position.y;
+    }
+
+    public void CheckSeperate()
     {
         var dir = (FarPoint.Position - NearPoint.Position).normalized;
         var hit = Physics2D.Raycast(NearPoint.Position, dir, (FarPoint.Position - NearPoint.Position).magnitude,
@@ -70,10 +80,10 @@ public class SilkSegment
             SilkDebug.DrawCross(hit.point, 0.3f, Color.red);
 
             var curLine = new Vector4(NearPoint.Position.x, NearPoint.Position.y, FarPoint.Position.x, FarPoint.Position.y);
-            SilkDebug.DrawLine(_lastLine, Color.green);
+            SilkDebug.DrawLine(LastLine, Color.green);
             SilkDebug.DrawLine(curLine, Color.black);
             LineCollisionHit lineHit;
-            var bl = LineCollision.TryGetLineCollisionPoint(_lastLine, curLine, out lineHit, LayerManager.LayerMask.SilkJoint,
+            var bl = LineCollision.TryGetLineCollisionPoint(LastLine, curLine, out lineHit, LayerManager.LayerMask.SilkJoint,
                                                    PhysicsConfig.SurfaceLayerThickness);
             var tmpDrawer = lineHit.Collider.GetComponent<TmpDrawCircleCollider2D>();
             if (tmpDrawer != null)
@@ -94,11 +104,6 @@ public class SilkSegment
                 MySilk.SeperateSegment(IndexOnSilk, lineHit.Point, jointItem);
             }
         }
-
-        _lastLine.x = NearPoint.Position.x;
-        _lastLine.y = NearPoint.Position.y;
-        _lastLine.z = FarPoint.Position.x;
-        _lastLine.w = FarPoint.Position.y;
     }
 
     public void FixedUpdate(float dt)
@@ -189,6 +194,7 @@ public class SilkSegment
         //limit.spring = 100;
         //limit.damper = 10;
         //Joint.linearLimit = limit;
+        Joint.enableCollision = true;
         Joint.maxDistanceOnly = true;
     }
 

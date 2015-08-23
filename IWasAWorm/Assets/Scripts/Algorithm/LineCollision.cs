@@ -66,7 +66,8 @@ public static class LineCollision
         if (curHit.collider.Raycast(startLineRay, out startLineHit, startLine.Length()))
         {
             SilkDebug.DrawCross(startLineHit.point, 0.1f, new Color(0.6f, 0.6f, 0));
-            Debug.LogWarningFormat("Penetration may happen at {0},{1}! startLine={2} endLine={3}", startLineHit.point.x, startLineHit.point.y, startLine, endLine);
+            Debug.LogWarningFormat("Penetration may happen at {0},{1}! startLine={2} endLine={3}, distanceToCenter={4}", startLineHit.point.x, startLineHit.point.y, startLine, endLine, CalcPointToLineVertical(startLine, curHit.collider.transform.position).magnitude);
+             
             Debug.Break();
             return false; //startLine都碰撞到这个东西了上一帧就该处理
         }
@@ -77,6 +78,12 @@ public static class LineCollision
         while (vertical.magnitude >= epsilon)
         {
             iterationTimes ++;
+            if (iterationTimes > 50)
+            {
+                Debug.LogFormat("iteration too many times > 50!");
+                Debug.Break();
+                break;
+            }
             var midLine = Vector4.Lerp(startLine, endLine, 0.5f);
             if (CheckLineCollision(midLine, out curHit, layerMask))
             {
@@ -100,7 +107,8 @@ public static class LineCollision
         {
             SilkDebug.DrawCross(new Vector2(endLine.x, endLine.y), 0.1f, new Color(0.5f, 0.5f, 0.1f));
             SilkDebug.DrawCross(new Vector2(endLine.z, endLine.w), 0.1f, new Color(0.4f, 0.4f, 0.3f));
-            Debug.LogError("Error Cannot find farHit @"+Time.frameCount);
+            Debug.LogError("Error Cannot find farHit @" + Time.frameCount);
+            Debug.LogWarningFormat("hits.Length == 0; startLine={0} endLine={1}, distanceToCenter={2}", startLine, endLine, CalcPointToLineVertical(startLine, curHit.collider.transform.position).magnitude);
             return false;
         }
         if (hits.Length > 1)//很少见，穿透了多次地形
@@ -261,6 +269,25 @@ public static class LineExtensions
     public static float Length(this Vector4 line)
     {
         return line.P1P2().magnitude;
+    }
+
+    public static Vector4 GetNearPart(this Vector4 line, float portion)
+    {
+        Vector4 nearPart;
+        nearPart.x = line.x;
+        nearPart.y = line.y;
+        nearPart.z = nearPart.x + (line.z - line.x)*portion;
+        nearPart.w = nearPart.y + (line.w - line.y)*portion;
+        return nearPart;
+    }
+    public static Vector4 GetFarPart(this Vector4 line, float portion)
+    {
+        Vector4 farPart;
+        farPart.z = line.z;
+        farPart.w = line.w;
+        farPart.x = farPart.z + (line.x - line.z)*portion;
+        farPart.y = farPart.w + (line.y - line.w)*portion;
+        return farPart;
     }
 }
 
